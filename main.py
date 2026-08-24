@@ -11,13 +11,11 @@ class GameState(BaseModel):
 
 OLLAMA_URL = "http://127.0.0.1:11434"
 
-# ==========================================
-# BRUTALNA LOGIKA MATEMATYCZNA (MINIMAX)
-# ==========================================
 def check_winner(b):
-    lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], # Poziomy
-             [0, 3, 6], [1, 4, 7], [2, 5, 8], # Piony
-             [0, 4, 8], [2, 4, 6] # Skosy
+    lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
     ]
     for line in lines:
         if b[line[0]] == b[line[1]] == b[line[2]] and b[line[0]] != "":
@@ -64,18 +62,11 @@ def find_best_move(b):
                 move = i
     return move
 
-# ==========================================
-# ENDPOINT STRZAŁU GRY
-# ==========================================
 @app.post("/api/move")
 async def ai_move(state: GameState):
-    # 1. Oblicz perfekcyjny, niemożliwy do oszukania ruch za pomocą algorytmu matematycznego
     perfect_move = find_best_move(state.board)
-    
-    # 2. Skoro ruch jest już znany, każ Ollamie wygenerować krótki tekst hakera/bota (Cyberpunk style)
-    # prompt zmusza Ollamę do bycia narratorem tego bezwzględnego ruchu
     ai_comment = "INJECTING CORRUPTION..."
-    prompt = f"Write one short tactical cyberpunk phrase (max 5 words) about rogue AI attacking slot {perfect_move}. Examples: BLACK ICE INJECTED, SYSTEM PURGE INITIATED, OVERRIDING RETINA NODE. Output ONLY the phrase, no intro, no comments."
+    prompt = f"Write one short tactical cyberpunk phrase (max 5 words) about rogue AI attacking slot {perfect_move}. Output ONLY the phrase, no intro, no comments."
     
     try:
         async with httpx.AsyncClient() as client:
@@ -87,9 +78,8 @@ async def ai_move(state: GameState):
             if response.status_code == 200:
                 ai_comment = response.json().get("response", "").strip().replace('"', '')
     except Exception:
-        pass # Jeśli Ollama złapie laga, system i tak zadziała bezbłędnie
+        pass
 
-    # Zwracamy idealny matematycznie ruch oraz unikalny log prosto z procesora LLM!
     return {"move": perfect_move, "comment": ai_comment}
 
 @app.get("/")
