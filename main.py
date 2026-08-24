@@ -26,12 +26,20 @@ async def ai_move(state: GameState):
 
     board_string_representation = "\n".join(grid_rows)
 
-    prompt = f"""You are playing Tic-Tac-Toe. Your symbol is 'O' and the opponent is 'X'.
-Current grid structure (numbers represent empty, available nodes):
+    prompt = f"""You are a perfect, flawless Tic-Tac-Toe AI engine. You play as 'O'. The opponent plays as 'X'.
+Your goal is to NEVER lose and ALWAYS exploit the opponent's mistakes to win.
+
+CURRENT GRID ARCHITECTURE (numbers represent empty, available nodes):
 {board_string_representation}
 
-Choose the best empty node to win or block.
-Output ONLY the single digit (0 to 8) representing your move. Do not write text, just the number."""
+CRITICAL RULES FOR MOVE SELECTION (Follow this exact priority order):
+1. WIN IMMEDIATELY: If there is a row, column, or diagonal where you already have TWO 'O' tokens and ONE empty number, select that empty number to WIN right now.
+2. BLOCK OPPONENT: If the opponent ('X') has TWO tokens in any line and ONE empty number, you MUST choose that empty number to BLOCK them from winning.
+3. FORK / STRATEGY: Take the center node (4) if it is free. If not, prioritize corner nodes (0, 2, 6, 8) to create traps.
+
+Look at the grid, identify all lines, find the single best node according to the rules, and output ONLY that digit (0-8).
+No text, no markdown blocks, no thinking logs, no extra characters. Just a single integer."""
+
 
     payload = {
         "model": "qwen2.5:0.5b",

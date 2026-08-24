@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NETRUNNER VS AI // TIC-TAC-TOE</title>
     <style>
-        /* New Clean Cyberpunk Dark Mode */
+        /* Styl bazowy - Czysty mroczny Cyberpunk */
         body {
             background-color: #0b0e11;
             color: #00f0ff; /* Cyberpunk Neon Cyan */
@@ -19,9 +19,8 @@
             user-select: none;
         }
 
-        /* Neon Yellow Header */
         h1 {
-            color: #fcee0a; 
+            color: #fcee0a; /* Cyberpunk Neon Yellow */
             font-size: 32px;
             text-transform: uppercase;
             letter-spacing: 4px;
@@ -37,14 +36,67 @@
             margin-bottom: 25px;
         }
 
-        /* Clean Terminal Box */
+        /* Główny kontener dzielący ekran na 3 kolumny */
+        .hud-container {
+            display: flex;
+            width: 95vw;
+            max-width: 1200px;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        /* Panele boczne */
+        .hud-panel {
+            flex: 1;
+            border: 2px solid #00f0ff;
+            background: #11161d;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+            font-size: 13px;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            color: #fcee0a;
+            font-weight: bold;
+            border-bottom: 1px solid #fcee0a;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        /* Panel lewy - Specyfikacja systemu */
+        .spec-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .spec-list li {
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .spec-list span {
+            color: #ff0055;
+            font-weight: bold;
+        }
+
+        /* Panel centralny - Plansza do gry */
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
         .status-box {
             border: 2px solid #00f0ff;
             background: #11161d;
             padding: 12px 20px;
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             width: 340px;
             text-align: center;
             box-sizing: border-box;
@@ -52,11 +104,10 @@
             box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
         }
 
-        /* Clean 3x3 Grid Board */
         .board {
             display: grid;
-            grid-template-columns: repeat(3, 110px);
-            grid-template-rows: repeat(3, 110px);
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
             gap: 12px;
             background: #11161d;
             padding: 15px;
@@ -64,11 +115,10 @@
             box-shadow: 0 0 20px rgba(255, 0, 85, 0.15);
         }
 
-        /* Grid Node Cells */
         .cell {
             background-color: #0b0e11;
             border: 1px solid #00f0ff;
-            font-size: 54px;
+            font-size: 48px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -82,18 +132,9 @@
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
         }
 
-        /* Token Glow Effects */
-        .cell.x-player {
-            color: #00f0ff; 
-            text-shadow: 0 0 15px #00f0ff;
-        }
+        .cell.x-player { color: #00f0ff; text-shadow: 0 0 15px #00f0ff; }
+        .cell.o-player { color: #ff0055; text-shadow: 0 0 15px #ff0055; }
 
-        .cell.o-player {
-            color: #ff0055; 
-            text-shadow: 0 0 15px #ff0055;
-        }
-
-        /* Disabled Node State */
         .cell.disabled {
             cursor: not-allowed;
             background-color: #06080a;
@@ -102,12 +143,32 @@
             text-shadow: none;
         }
 
-        /* Tactical Angled Button */
+        /* Panel prawy - Konsola logów terminatora */
+        .log-console {
+            background: #05070a;
+            border: 1px dashed #ff0055;
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            max-height: 350px;
+            color: #ff0055; /* Terminator Red Look */
+            font-size: 11px;
+            box-shadow: inset 0 0 10px rgba(255,0,85,0.2);
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            border-left: 2px solid #ff0055;
+            padding-left: 5px;
+            animation: blink 0.1s ease;
+        }
+
+        /* Przycisk resetu */
         button {
-            margin-top: 30px;
-            padding: 14px 35px;
+            margin-top: 20px;
+            padding: 12px 30px;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
             background-color: #fcee0a;
@@ -127,16 +188,41 @@
 </head>
 <body>
 
-    <h1>NETRUNNER // AI</h1>
+    <h1>NETRUNNER // ARCHITECTURE</h1>
     <div class="subtitle">Sub-Grid Connection: Secure</div>
 
-    <div class="status-box" id="status">YOUR MOVE (X)</div>
-    
-    <div class="board" id="board">
-        <!-- Grid Nodes injected via JavaScript -->
-    </div>
+    <div class="hud-container">
+        
+        <!-- PANEL LEWY: SPECYFIKACJA SYSTEMU -->
+        <div class="hud-panel">
+            <div class="panel-title">// SYS_SPECIFICATION</div>
+            <ul class="spec-list">
+                <li>• DEPLOYMENT: <span>100% CLOUD-BASED</span></li>
+                <li>• INFRASTRUCTURE: <span>GITHUB CODESPACES ARCH</span></li>
+                <li>• FINANCIAL COST: <span>0.00 EURO // TOTAL FREE</span></li>
+                <li>• AI ENGINE: <span>OLLAMA LOCAL DEEPCORE</span></li>
+                <li>• LOGIC MODEL: <span>QWEN-2.5-0.5B-NEURAL</span></li>
+                <li>• SECURITY: <span>ICE BARRIER STABLE</span></li>
+            </ul>
+        </div>
 
-    <button onclick="resetGame()">Reboot System</button>
+        <!-- PANEL CENTRALNY: PLANSZA -->
+        <div class="center-area">
+            <div class="status-box" id="status">YOUR MOVE (X)</div>
+            <div class="board" id="board"></div>
+            <button onclick="resetGame()">Reboot System</button>
+        </div>
+
+        <!-- PANEL PRAWY: KONSOLA LOGÓW BLACKWALLA -->
+        <div class="hud-panel">
+            <div class="panel-title">// BLACKWALL_LOGS</div>
+            <div class="log-console" id="logConsole">
+                <div class="log-entry">>> NETRUNNER DECK INITIALIZED...</div>
+                <div class="log-entry">>> STANDBY FOR INTEL DATA...</div>
+            </div>
+        </div>
+
+    </div>
 
     <script>
         let board = ["", "", "", "", "", "", "", "", ""];
@@ -144,6 +230,16 @@
         
         const boardElement = document.getElementById('board');
         const statusElement = document.getElementById('status');
+        const logConsole = document.getElementById('logConsole');
+
+        // Funkcja dodająca wpisy do konsoli w stylu Terminatora
+        function addLog(message) {
+            const entry = document.createElement('div');
+            entry.classList.add('log-entry');
+            entry.innerText = `>> ${message}`;
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight; // Auto-scroll w dół
+        }
 
         function drawBoard() {
             boardElement.innerHTML = "";
@@ -161,21 +257,27 @@
             });
         }
 
+        // Pomocnicza funkcja do robienia przerw (sztuczne opóźnienie)
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
         async function playerClick(index) {
             if (board[index] !== "" || !isGameActive) return;
 
             board[index] = "X";
             drawBoard();
+            addLog(`USER OCCUPIED NODE_${index}. SEARCHING COUNTERMEASURES...`);
 
             if (checkWin("X")) {
                 statusElement.innerText = ">> OVERRIDE: YOU WIN! 🎉";
                 statusElement.style.color = "#fcee0a";
+                addLog("CRITICAL SYSTEM FAILURE: DETONATING PLAYER OVERRIDE.");
                 isGameActive = false;
                 drawBoard();
                 return;
             }
             if (!board.includes("")) {
                 statusElement.innerText = ">> LOCKED: DRAW 🤝";
+                addLog("GRID DEPLATED. NO NODES AVAILABLE. SYSTEM DRAW.");
                 isGameActive = false;
                 return;
             }
@@ -183,6 +285,14 @@
             isGameActive = false;
             statusElement.innerText = ">> AI BREACHING SYSTEM...";
             drawBoard();
+
+            // --- SEKCJA KINEMATYCZNA REAKCJI AI (Sztuczne logi w czasie) ---
+            await delay(400);
+            addLog("CONNECTION TO BLACKWALL ESTABLISHED.");
+            await delay(500);
+            addLog("NEURAL CORE CALCULATING TRAJECTORY...");
+            await delay(500);
+            addLog("BYPASSING LOCAL ICE RETINA...");
 
             try {
                 const response = await fetch('/api/move', {
@@ -194,46 +304,59 @@
                 if (!response.ok) throw new Error("ICE Triggered");
 
                 const data = await response.json();
-                
+                // Dodatkowe małe opóźnienie dla płynności przed samym uderzeniem AI
+                await delay(400);
                 board[data.move] = "O";
                 isGameActive = true;
                 statusElement.innerText = "YOUR MOVE (X)";
-                
+                addLog(`ROGUE AI INJECTED CORRUPTION INTO NODE_${data.move}.`);
+
                 if (checkWin("O")) {
                     statusElement.innerText = ">> BLACK ICE DETECTED: AI WINS! 🤖";
                     statusElement.style.color = "#ff0055";
+                    addLog("CRITICAL: BLACK ICE TERMINATED NETRUNNER BRAIN FUNCTIONS.");
                     isGameActive = false;
                 } else if (!board.includes("")) {
                     statusElement.innerText = ">> LOCKED: DRAW 🤝";
+                    addLog("GRID DEPLATED. NO NODES AVAILABLE. SYSTEM DRAW.");
                     isGameActive = false;
                 }
-                
-                drawBoard();
 
+                drawBoard();
             } catch (error) {
                 statusElement.innerText = ">> ERROR: LINK SEVERED.";
+                addLog("LINK SEVERED. UNABLE TO COM         UNICATE WITH NEURAL CORE.");
                 isGameActive = true;
                 drawBoard();
             }
         }
 
         function checkWin(player) {
-            const winConditions = [, [3, 4, 5], [6, 7, 8], // Horizontals, [1, 4, 7], [2, 5, 8], // Verticals, [2, 4, 6]             // Diagonals
-            ];
-            return winConditions.some(combination => {
-                return combination.every(index => board[index] === player);
-            });
-        }
-
-        function resetGame() {
-            board = ["", "", "", "", "", "", "", "", ""];
-            isGameActive = true;
-            statusElement.innerText = "YOUR MOVE (X)";
-            statusElement.style.color = "#00f0ff";
-            drawBoard();
-        }
-
-        drawBoard();
-    </script>
-</body>
-</html>
+    const winConditions = [
+        // Poziomy
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        // Piony
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        // Ukosy
+        [0, 4, 8],
+        [2, 4, 6]
+    ];
+    return winConditions.some(combination => {
+        return combination.every(index => board[index] === player);
+    });
+}
+function resetGame() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    isGameActive = true;
+    statusElement.innerText = "YOUR MOVE (X)";
+    statusElement.style.color = "#00f0ff";
+    logConsole.innerHTML = "";
+    addLog("SYSTEM HARD REBOOT EXECUTED.");
+    addLog("READY FOR INTRUSION DETECT.");
+    drawBoard();
+}
+drawBoard();
