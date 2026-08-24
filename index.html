@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRUNNER VS AI // TIC-TAC-TOE</title>
+    <style>
+        /* New Clean Cyberpunk Dark Mode */
+        body {
+            background-color: #0b0e11;
+            color: #00f0ff; /* Cyberpunk Neon Cyan */
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        /* Neon Yellow Header */
+        h1 {
+            color: #fcee0a; 
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
+        }
+
+        .subtitle {
+            color: #ff0055; /* Neon Pink */
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+        }
+
+        /* Clean Terminal Box */
+        .status-box {
+            border: 2px solid #00f0ff;
+            background: #11161d;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            width: 340px;
+            text-align: center;
+            box-sizing: border-box;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+
+        /* Clean 3x3 Grid Board */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 110px);
+            grid-template-rows: repeat(3, 110px);
+            gap: 12px;
+            background: #11161d;
+            padding: 15px;
+            border: 2px solid #ff0055;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.15);
+        }
+
+        /* Grid Node Cells */
+        .cell {
+            background-color: #0b0e11;
+            border: 1px solid #00f0ff;
+            font-size: 54px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cell:hover {
+            background-color: rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Token Glow Effects */
+        .cell.x-player {
+            color: #00f0ff; 
+            text-shadow: 0 0 15px #00f0ff;
+        }
+
+        .cell.o-player {
+            color: #ff0055; 
+            text-shadow: 0 0 15px #ff0055;
+        }
+
+        /* Disabled Node State */
+        .cell.disabled {
+            cursor: not-allowed;
+            background-color: #06080a;
+            border-color: #222b35;
+            color: #222b35;
+            text-shadow: none;
+        }
+
+        /* Tactical Angled Button */
+        button {
+            margin-top: 30px;
+            padding: 14px 35px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background-color: #fcee0a;
+            color: #000;
+            border: none;
+            clip-path: polygon(0 0, 90% 0, 100% 30%, 100% 100%, 10% 100%, 0 70%);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #fffb15;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(252, 238, 10, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NETRUNNER // AI</h1>
+    <div class="subtitle">Sub-Grid Connection: Secure</div>
+
+    <div class="status-box" id="status">YOUR MOVE (X)</div>
+    
+    <div class="board" id="board">
+        <!-- Grid Nodes injected via JavaScript -->
+    </div>
+
+    <button onclick="resetGame()">Reboot System</button>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let isGameActive = true;
+        
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+
+        function drawBoard() {
+            boardElement.innerHTML = "";
+            board.forEach((value, index) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                
+                if (value === "X") cell.classList.add('x-player');
+                if (value === "O") cell.classList.add('o-player');
+                if (value !== "" || !isGameActive) cell.classList.add('disabled');
+                
+                cell.innerText = value;
+                cell.addEventListener('click', () => playerClick(index));
+                boardElement.appendChild(cell);
+            });
+        }
+
+        async function playerClick(index) {
+            if (board[index] !== "" || !isGameActive) return;
+
+            board[index] = "X";
+            drawBoard();
+
+            if (checkWin("X")) {
+                statusElement.innerText = ">> OVERRIDE: YOU WIN! 🎉";
+                statusElement.style.color = "#fcee0a";
+                isGameActive = false;
+                drawBoard();
+                return;
+            }
+            if (!board.includes("")) {
+                statusElement.innerText = ">> LOCKED: DRAW 🤝";
+                isGameActive = false;
+                return;
+            }
+
+            isGameActive = false;
+            statusElement.innerText = ">> AI BREACHING SYSTEM...";
+            drawBoard();
+
+            try {
+                const response = await fetch('/api/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ board: board, player_symbol: "X" })
+                });
+
+                if (!response.ok) throw new Error("ICE Triggered");
+
+                const data = await response.json();
+                
+                board[data.move] = "O";
+                isGameActive = true;
+                statusElement.innerText = "YOUR MOVE (X)";
+                
+                if (checkWin("O")) {
+                    statusElement.innerText = ">> BLACK ICE DETECTED: AI WINS! 🤖";
+                    statusElement.style.color = "#ff0055";
+                    isGameActive = false;
+                } else if (!board.includes("")) {
+                    statusElement.innerText = ">> LOCKED: DRAW 🤝";
+                    isGameActive = false;
+                }
+                
+                drawBoard();
+
+            } catch (error) {
+                statusElement.innerText = ">> ERROR: LINK SEVERED.";
+                isGameActive = true;
+                drawBoard();
+            }
+        }
+
+        function checkWin(player) {
+            const winConditions = [, [3, 4, 5], [6, 7, 8], // Horizontals, [1, 4, 7], [2, 5, 8], // Verticals, [2, 4, 6]             // Diagonals
+            ];
+            return winConditions.some(combination => {
+                return combination.every(index => board[index] === player);
+            });
+        }
+
+        function resetGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            isGameActive = true;
+            statusElement.innerText = "YOUR MOVE (X)";
+            statusElement.style.color = "#00f0ff";
+            drawBoard();
+        }
+
+        drawBoard();
+    </script>
+</body>
+</html>
