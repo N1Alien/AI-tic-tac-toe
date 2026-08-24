@@ -260,7 +260,7 @@
         // Pomocnicza funkcja do robienia przerw (sztuczne opóźnienie)
         const delay = ms => new Promise(res => setTimeout(res, ms));
 
-        async function playerClick(index) {
+               async function playerClick(index) {
             if (board[index] !== "" || !isGameActive) return;
 
             board[index] = "X";
@@ -286,7 +286,6 @@
             statusElement.innerText = ">> AI BREACHING SYSTEM...";
             drawBoard();
 
-            // --- SEKCJA KINEMATYCZNA REAKCJI AI (Sztuczne logi w czasie) ---
             await delay(400);
             addLog("CONNECTION TO BLACKWALL ESTABLISHED.");
             await delay(500);
@@ -304,13 +303,16 @@
                 if (!response.ok) throw new Error("ICE Triggered");
 
                 const data = await response.json();
-                // Dodatkowe małe opóźnienie dla płynności przed samym uderzeniem AI
+                
                 await delay(400);
+
                 board[data.move] = "O";
                 isGameActive = true;
                 statusElement.innerText = "YOUR MOVE (X)";
-                addLog(`ROGUE AI INJECTED CORRUPTION INTO NODE_${data.move}.`);
-
+                
+                // Tutaj dynamicznie wrzucamy do logów unikalny tekst wypluty przez Ollamę!
+                addLog(`ROGUE AI: ${data.comment.toUpperCase()}`);
+                
                 if (checkWin("O")) {
                     statusElement.innerText = ">> BLACK ICE DETECTED: AI WINS! 🤖";
                     statusElement.style.color = "#ff0055";
@@ -321,27 +323,29 @@
                     addLog("GRID DEPLATED. NO NODES AVAILABLE. SYSTEM DRAW.");
                     isGameActive = false;
                 }
-
+                
                 drawBoard();
+
             } catch (error) {
                 statusElement.innerText = ">> ERROR: LINK SEVERED.";
-                addLog("LINK SEVERED. UNABLE TO COM         UNICATE WITH NEURAL CORE.");
+                addLog("LINK SEVERED. UNABLE TO COMMUNICATE WITH NEURAL CORE.");
                 isGameActive = true;
                 drawBoard();
             }
         }
 
+
         function checkWin(player) {
     const winConditions = [
-        // Poziomy
+      
         [0, 1, 2],
         [3, 4, 5],
         [6, 7, 8],
-        // Piony
+    
         [0, 3, 6],
         [1, 4, 7],
         [2, 5, 8],
-        // Ukosy
+   
         [0, 4, 8],
         [2, 4, 6]
     ];
@@ -360,3 +364,6 @@ function resetGame() {
     drawBoard();
 }
 drawBoard();
+    </script>
+</body>
+</html>

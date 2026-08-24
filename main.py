@@ -9,65 +9,88 @@ class GameState(BaseModel):
     board: list[str]
     player_symbol: str
 
-# W Codespaces Ollama będzie działać na tym samym serwerze
 OLLAMA_URL = "http://127.0.0.1:11434"
 
+# ==========================================
+# BRUTALNA LOGIKA MATEMATYCZNA (MINIMAX)
+# ==========================================
+def check_winner(b):
+    lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], # Poziomy
+             [0, 3, 6], [1, 4, 7], [2, 5, 8], # Piony
+             [0, 4, 8], [2, 4, 6] # Skosy
+    ]
+    for line in lines:
+        if b[line[0]] == b[line[1]] == b[line[2]] and b[line[0]] != "":
+            return b[line[0]]
+    if "" not in b:
+        return "Draw"
+    return None
+
+def minimax(b, depth, is_maximizing):
+    score = check_winner(b)
+    if score == "O": return 10 - depth
+    if score == "X": return depth - 10
+    if score == "Draw": return 0
+
+    if is_maximizing:
+        best_score = -float('inf')
+        for i in range(9):
+            if b[i] == "":
+                b[i] = "O"
+                sim_score = minimax(b, depth + 1, False)
+                b[i] = ""
+                best_score = max(sim_score, best_score)
+        return best_score
+    else:
+        best_score = float('inf')
+        for i in range(9):
+            if b[i] == "":
+                b[i] = "X"
+                sim_score = minimax(b, depth + 1, True)
+                b[i] = ""
+                best_score = min(sim_score, best_score)
+        return best_score
+
+def find_best_move(b):
+    best_score = -float('inf')
+    move = -1
+    for i in range(9):
+        if b[i] == "":
+            b[i] = "O"
+            move_score = minimax(b, 0, False)
+            b[i] = ""
+            if move_score > best_score:
+                best_score = move_score
+                move = i
+    return move
+
+# ==========================================
+# ENDPOINT STRZAŁU GRY
+# ==========================================
 @app.post("/api/move")
 async def ai_move(state: GameState):
-    grid_rows = []
-    for i in range(0, 9, 3):
-        row_cells = []
-        for j in range(i, i + 3):
-            if state.board[j] == "":
-                row_cells.append(str(j))
-            else:
-                row_cells.append(state.board[j])
-        grid_rows.append(f"Row {i//3 + 1}: " + " | ".join(row_cells))
-
-    board_string_representation = "\n".join(grid_rows)
-
-    prompt = f"""You are a perfect, flawless Tic-Tac-Toe AI engine. You play as 'O'. The opponent plays as 'X'.
-Your goal is to NEVER lose and ALWAYS exploit the opponent's mistakes to win.
-
-CURRENT GRID ARCHITECTURE (numbers represent empty, available nodes):
-{board_string_representation}
-
-CRITICAL RULES FOR MOVE SELECTION (Follow this exact priority order):
-1. WIN IMMEDIATELY: If there is a row, column, or diagonal where you already have TWO 'O' tokens and ONE empty number, select that empty number to WIN right now.
-2. BLOCK OPPONENT: If the opponent ('X') has TWO tokens in any line and ONE empty number, you MUST choose that empty number to BLOCK them from winning.
-3. FORK / STRATEGY: Take the center node (4) if it is free. If not, prioritize corner nodes (0, 2, 6, 8) to create traps.
-
-Look at the grid, identify all lines, find the single best node according to the rules, and output ONLY that digit (0-8).
-No text, no markdown blocks, no thinking logs, no extra characters. Just a single integer."""
-
-
-    payload = {
-        "model": "qwen2.5:0.5b",
-        "prompt": prompt,
-        "stream": False,
-        "options": {"temperature": 0.0}
-    }
-
+    # 1. Oblicz perfekcyjny, niemożliwy do oszukania ruch za pomocą algorytmu matematycznego
+    perfect_move = find_best_move(state.board)
+    
+    # 2. Skoro ruch jest już znany, każ Ollamie wygenerować krótki tekst hakera/bota (Cyberpunk style)
+    # prompt zmusza Ollamę do bycia narratorem tego bezwzględnego ruchu
+    ai_comment = "INJECTING CORRUPTION..."
+    prompt = f"Write one short tactical cyberpunk phrase (max 5 words) about rogue AI attacking slot {perfect_move}. Examples: BLACK ICE INJECTED, SYSTEM PURGE INITIATED, OVERRIDING RETINA NODE. Output ONLY the phrase, no intro, no comments."
+    
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=15.0)
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail="Ollama offline")
-
-            result = response.json()
-            ai_response_text = result.get("response", "").strip()
-
-            if ai_response_text.isdigit():
-                chosen_node = int(ai_response_text)
-                if chosen_node in range(9) and state.board[chosen_node] == "":
-                    return {"move": chosen_node}
-
-            for index, node_value in enumerate(state.board):
-                if node_value == "": return {"move": index}
-
+            response = await client.post(
+                f"{OLLAMA_URL}/api/generate", 
+                json={"model": "qwen2.5:0.5b", "prompt": prompt, "stream": False, "options": {"temperature": 0.7}},
+                timeout=5.0
+            )
+            if response.status_code == 200:
+                ai_comment = response.json().get("response", "").strip().replace('"', '')
     except Exception:
-        for index, node_value in enumerate(state.board):
-            if node_value == "": return {"move": index}
+        pass # Jeśli Ollama złapie laga, system i tak zadziała bezbłędnie
+
+    # Zwracamy idealny matematycznie ruch oraz unikalny log prosto z procesora LLM!
+    return {"move": perfect_move, "comment": ai_comment}
 
 @app.get("/")
 async def serve_cyberpunk_hud():
